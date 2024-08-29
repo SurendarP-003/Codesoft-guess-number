@@ -1,0 +1,30 @@
+#include <iostream>
+#include <cstdlib> 
+#include <ctime>   
+int main() {
+    std::srand(static_cast<unsigned>(std::time(0)));
+    int guess = std::rand() % 100 + 1;
+    int g = 0;
+
+    std::cout << "Welcome to the Number Guessing Game!" << std::endl;
+    std::cout << "the numbers between 1 and 100." << std::endl;
+
+    while (g != guess) {
+        std::cout << "Enter your guess number: ";
+        std::cin >> g;
+
+    if (std::cin.fail()) {
+            std::cin.clear();
+            std::cin.ignore(10000, '\n'); 
+            std::cout << "Please enter a valid integer." << std::endl;
+        } else if (g < guess) {
+            std::cout << "Too low! Try again." << std::endl;
+        } else if (g > guess) {
+            std::cout << "Too high! Try again." << std::endl;
+        } else {
+            std::cout << "Congratulations! You found the guessed  number." << std::endl;
+        }
+    }
+
+    return 0;
+}
