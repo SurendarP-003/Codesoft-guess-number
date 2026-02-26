@@ -1,30 +1,153 @@
 #include <iostream>
-#include <cstdlib> 
-#include <ctime>   
-int main() {
-    std::srand(static_cast<unsigned>(std::time(0)));
-    int guess = std::rand() % 100 + 1;
-    int g = 0;
+#include <random>
+#include <chrono>
+#include <fstream>
+#include <string>
 
-    std::cout << "Welcome to the Number Guessing Game!" << std::endl;
-    std::cout << "the numbers between 1 and 100." << std::endl;
+class NumberGuessingGame {
+private:
+    int secretNumber;
+    int maxRange;
+    int maxAttempts;
+    int attempts;
+    bool limitedMode;
 
-    while (g != guess) {
-        std::cout << "Enter your guess number: ";
-        std::cin >> g;
+    std::mt19937 gen;
 
-    if (std::cin.fail()) {
-            std::cin.clear();
-            std::cin.ignore(10000, '\n'); 
-            std::cout << "Please enter a valid integer." << std::endl;
-        } else if (g < guess) {
-            std::cout << "Too low! Try again." << std::endl;
-        } else if (g > guess) {
-            std::cout << "Too high! Try again." << std::endl;
-        } else {
-            std::cout << "Congratulations! You found the guessed  number." << std::endl;
+public:
+    NumberGuessingGame() : gen(std::random_device{}()) {}
+
+    void setupGame() {
+        int difficulty;
+        int modeChoice;
+
+        std::cout << "\n===== Select Difficulty =====\n";
+        std::cout << "1. Easy (1-50)\n";
+        std::cout << "2. Medium (1-100)\n";
+        std::cout << "3. Hard (1-500)\n";
+        std::cout << "Enter choice: ";
+        std::cin >> difficulty;
+
+        if (difficulty == 1) {
+            maxRange = 50;
+            maxAttempts = 10;
         }
+        else if (difficulty == 3) {
+            maxRange = 500;
+            maxAttempts = 20;
+        }
+        else {
+            maxRange = 100;
+            maxAttempts = 15;
+        }
+
+        std::cout << "\nSelect Mode:\n";
+        std::cout << "1. Unlimited Attempts\n";
+        std::cout << "2. Limited Attempts\n";
+        std::cout << "Enter choice: ";
+        std::cin >> modeChoice;
+
+        limitedMode = (modeChoice == 2);
+
+        std::uniform_int_distribution<> dist(1, maxRange);
+        secretNumber = dist(gen);
+        attempts = 0;
+
+        std::cout << "\nGuess a number between 1 and " << maxRange << "\n";
     }
 
+    int playGame() {
+        int guess;
+        auto start = std::chrono::high_resolution_clock::now();
+
+        while (true) {
+            std::cout << "Enter guess: ";
+            std::cin >> guess;
+
+            if (std::cin.fail()) {
+                std::cin.clear();
+                std::cin.ignore(10000, '\n');
+                std::cout << "Invalid input!\n";
+                continue;
+            }
+
+            attempts++;
+
+            if (guess < secretNumber)
+                std::cout << "Too low!\n";
+            else if (guess > secretNumber)
+                std::cout << "Too high!\n";
+            else {
+                std::cout << "\n🎉 Correct!\n";
+                break;
+            }
+
+            if (limitedMode && attempts >= maxAttempts) {
+                std::cout << "\n❌ Out of attempts! The number was "
+                          << secretNumber << "\n";
+                return 0;
+            }
+        }
+
+        auto end = std::chrono::high_resolution_clock::now();
+        int timeTaken = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+
+        int remaining = maxAttempts - attempts;
+        if (!limitedMode) remaining = 10;
+
+        int score = (remaining * 10) - timeTaken;
+        if (score < 0) score = 0;
+
+        std::cout << "Attempts: " << attempts << "\n";
+        std::cout << "Time Taken: " << timeTaken << " seconds\n";
+        std::cout << "Score: " << score << "\n";
+
+        return score;
+    }
+
+    void saveScore(int score) {
+        std::string name;
+        std::cout << "Enter your name for leaderboard: ";
+        std::cin >> name;
+
+        std::ofstream file("leaderboard.txt", std::ios::app);
+        file << name << " Score: " << score << "\n";
+        file.close();
+
+        std::cout << "Score saved!\n";
+    }
+
+    void showLeaderboard() {
+        std::ifstream file("leaderboard.txt");
+        std::string line;
+
+        std::cout << "\n===== Leaderboard =====\n";
+        while (getline(file, line)) {
+            std::cout << line << "\n";
+        }
+        file.close();
+    }
+};
+
+int main() {
+    char playAgain = 'y';
+
+    while (playAgain == 'y' || playAgain == 'Y') {
+
+        NumberGuessingGame game;
+        game.setupGame();
+
+        int score = game.playGame();
+
+        if (score > 0)
+            game.saveScore(score);
+
+        game.showLeaderboard();
+
+        std::cout << "\nPlay again? (y/n): ";
+        std::cin >> playAgain;
+    }
+
+    std::cout << "\nThanks for playing!\n";
     return 0;
 }
